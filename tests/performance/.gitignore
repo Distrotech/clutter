@@ -1,0 +1,9 @@
+*.o
+.gitignore
+/test-picking
+/test-text-perf
+/test-state
+/test-state-interactive
+/test-state-hidden
+/test-state-mini
+/test-state-pick
