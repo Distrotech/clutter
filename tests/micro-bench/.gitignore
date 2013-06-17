@@ -1,0 +1,7 @@
+*.o
+.gitignore
+/test-text
+/test-picking
+/test-text-perf
+/test-random-text
+/test-cogl-perf
