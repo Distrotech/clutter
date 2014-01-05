@@ -112,14 +112,8 @@
 /* Define to 1 if we have the XEXT X extension */
 #undef HAVE_XEXT
 
-/* Define to 1 if we have the XFIXES X extension */
-#undef HAVE_XFIXES
-
 /* Define to 1 if X Generic Extensions is available */
 #undef HAVE_XGE
-
-/* Define to 1 if XInput is available */
-#undef HAVE_XINPUT
 
 /* Define to 1 if XI2 is available */
 #undef HAVE_XINPUT_2
@@ -133,9 +127,6 @@
 /* Define to the sub-directory in which libtool stores uninstalled libraries.
    */
 #undef LT_OBJDIR
-
-/* Define to 1 if your C compiler doesn't accept -c and -o together. */
-#undef NO_MINUS_C_MINUS_O
 
 /* Define to 1 if building for Linux */
 #undef OS_LINUX
