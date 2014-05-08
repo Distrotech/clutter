@@ -92,6 +92,7 @@ static const gchar *atom_names[] = {
 static gboolean _no_xevent_retrieval = FALSE;
 static gboolean clutter_enable_xinput = TRUE;
 static gboolean clutter_enable_argb = FALSE;
+static gboolean clutter_enable_stereo = FALSE;
 static Display  *_foreign_dpy = NULL;
 
 /* options */
@@ -704,6 +705,8 @@ clutter_backend_x11_get_display (ClutterBackend  *backend,
   cogl_swap_chain_set_has_alpha (swap_chain, clutter_enable_argb);
 
   onscreen_template = cogl_onscreen_template_new (swap_chain);
+  cogl_onscreen_template_set_stereo_enabled (onscreen_template,
+					     clutter_enable_stereo);
 
   res = cogl_renderer_check_onscreen_template (renderer,
                                                onscreen_template,
@@ -1300,6 +1303,60 @@ gboolean
 clutter_x11_get_use_argb_visual (void)
 {
   return clutter_enable_argb;
+}
+
+/**
+ * clutter_x11_set_use_stereo_stage:
+ * @use_stereo: %TRUE if the stereo stages should be used if possible.
+ *
+ * Sets whether the backend object for Clutter stages, will,
+ * if possible, be created with the ability to support stereo drawing
+ * (drawing separate images for the left and right eyes).
+ *
+ * This function must be called before clutter_init() is called.
+ * During paint callbacks, cogl_framebuffer_is_stereo() can be called
+ * on the framebuffer retrieved by cogl_get_draw_framebuffer() to
+ * determine if stereo support was successfully enabled, and
+ * cogl_framebuffer_set_stereo_mode() to determine which buffers
+ * will be drawn to.
+ *
+ * Note that this function *does not* cause the stage to be drawn
+ * multiple times with different perspective transformations and thus
+ * appear in 3D, it simply enables individual ClutterActors to paint
+ * different images for the left and and right eye.
+ *
+ * Since: 1.18
+ */
+void
+clutter_x11_set_use_stereo_stage (gboolean use_stereo)
+{
+  if (_clutter_context_is_initialized ())
+    {
+      g_warning ("%s() can only be used before calling clutter_init()",
+                 G_STRFUNC);
+      return;
+    }
+
+  CLUTTER_NOTE (BACKEND, "STEREO stages are %s",
+                use_stereo ? "enabled" : "disabled");
+
+  clutter_enable_stereo = use_stereo;
+}
+
+/**
+ * clutter_x11_get_use_stereo_stage:
+ *
+ * Retrieves whether the Clutter X11 backend will create stereo
+ * stages if possible.
+ *
+ * Return value: %TRUE if stereo stages are used if possible
+ *
+ * Since: 1.18
+ */
+gboolean
+clutter_x11_get_use_stereo_stage (void)
+{
+  return clutter_enable_stereo;
 }
 
 XVisualInfo *
