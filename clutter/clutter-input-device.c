@@ -72,6 +72,14 @@ enum
   PROP_LAST
 };
 
+enum
+{
+  TOOL_CHANGED,
+  N_SIGNALS
+};
+
+static guint signals[N_SIGNALS] = { 0 };
+
 static void _clutter_input_device_free_touch_info (gpointer data);
 
 
@@ -405,6 +413,23 @@ clutter_input_device_class_init (ClutterInputDeviceClass *klass)
                          P_("Product ID"),
                          NULL,
                          CLUTTER_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY);
+
+  /**
+   * ClutterInputDevice::tool-changed:
+   * @tool: The new tool in use for this device
+   *
+   * Emitted whenever the tool of a %CLUTTER_TABLET_DEVICE changes, a %NULL
+   * tool means the pen went too far from the tablet.
+   *
+   * Since: 1.22
+   */
+  signals[TOOL_CHANGED] =
+    g_signal_new (g_intern_static_string ("tool-changed"),
+                  G_TYPE_FROM_CLASS (gobject_class),
+                  G_SIGNAL_RUN_LAST,
+                  0, NULL, NULL,
+                  g_cclosure_marshal_VOID__BOXED,
+                  G_TYPE_NONE, 1, CLUTTER_TYPE_INPUT_DEVICE_TOOL);
 
   gobject_class->dispose = clutter_input_device_dispose;
   gobject_class->set_property = clutter_input_device_set_property;
@@ -1973,4 +1998,103 @@ clutter_input_device_get_product_id (ClutterInputDevice *device)
   g_return_val_if_fail (clutter_input_device_get_device_mode (device) != CLUTTER_INPUT_MODE_MASTER, NULL);
 
   return device->product_id;
+}
+
+static ClutterInputDeviceTool *
+clutter_input_device_tool_copy (ClutterInputDeviceTool *tool)
+{
+  return tool;
+}
+
+static void
+clutter_input_device_tool_free (ClutterInputDeviceTool *tool)
+{
+  /* Nothing to free here, memory is owned by ClutterInputDevice */
+}
+
+G_DEFINE_BOXED_TYPE (ClutterInputDeviceTool, clutter_input_device_tool,
+                     clutter_input_device_tool_copy,
+                     clutter_input_device_tool_free);
+
+ClutterInputDeviceTool *
+_clutter_input_device_tool_new (guint serial)
+{
+  ClutterInputDeviceTool *tool;
+
+  tool = g_new0 (ClutterInputDeviceTool, 1);
+  tool->serial = serial;
+
+  return tool;
+}
+
+void
+_clutter_input_device_add_tool (ClutterInputDevice     *device,
+                                ClutterInputDeviceTool *tool)
+{
+  g_return_if_fail (CLUTTER_IS_INPUT_DEVICE (device));
+  g_return_if_fail (clutter_input_device_get_device_mode (device) != CLUTTER_INPUT_MODE_MASTER);
+  g_return_if_fail (tool != NULL);
+
+  if (!device->tools)
+    device->tools = g_ptr_array_new_with_free_func ((GDestroyNotify) g_free);
+
+  g_ptr_array_add (device->tools, tool);
+}
+
+void
+_clutter_input_device_update_tool (ClutterInputDevice     *device,
+                                   ClutterInputDeviceTool *tool)
+{
+  g_return_if_fail (CLUTTER_IS_INPUT_DEVICE (device));
+  g_return_if_fail (clutter_input_device_get_device_mode (device) != CLUTTER_INPUT_MODE_MASTER);
+  g_return_if_fail (!tool || _clutter_input_device_lookup_tool (device, clutter_input_device_tool_get_serial (tool)) != NULL);
+
+  if (device->last_tool == tool)
+    return;
+
+  device->last_tool = tool;
+  g_signal_emit (device, signals[TOOL_CHANGED], 0, tool);
+}
+
+ClutterInputDeviceTool *
+_clutter_input_device_lookup_tool (ClutterInputDevice *device,
+                                   guint               serial)
+{
+  ClutterInputDeviceTool *tool;
+  guint i;
+
+  g_return_val_if_fail (CLUTTER_IS_INPUT_DEVICE (device), NULL);
+  g_return_val_if_fail (clutter_input_device_get_device_mode (device) != CLUTTER_INPUT_MODE_MASTER, NULL);
+
+  if (!device->tools)
+    return NULL;
+
+  for (i = 0; i < device->tools->len; i++)
+    {
+      tool = g_ptr_array_index (device->tools, i);
+
+      if (tool->serial == serial)
+        return tool;
+    }
+
+  return NULL;
+}
+
+/**
+ * clutter_input_device_tool_get_serial:
+ * @tool: a #ClutterInputDeviceTool
+ *
+ * Gets the serial of this tool, this value can be used to identify a
+ * physical tool (eg. a tablet pen) across program executions.
+ *
+ * Returns: The serial ID for this tool
+ *
+ * Since: 1.22
+ **/
+guint
+clutter_input_device_tool_get_serial (ClutterInputDeviceTool *tool)
+{
+  g_return_val_if_fail (tool != NULL, 0);
+
+  return tool->serial;
 }
