@@ -123,6 +123,19 @@ _clutter_input_device_evdev_new (ClutterDeviceManager *manager,
                          "product-id", product,
                          NULL);
 
+  if (type == CLUTTER_TABLET_DEVICE)
+    {
+      ClutterInputDevice *dev = CLUTTER_INPUT_DEVICE (device);
+
+      /* Add axes, matching libinput_tablet_axis order */
+      _clutter_input_device_add_axis (dev, CLUTTER_INPUT_AXIS_X, 0, 0, 0);
+      _clutter_input_device_add_axis (dev, CLUTTER_INPUT_AXIS_Y, 0, 0, 0);
+      _clutter_input_device_add_axis (dev, CLUTTER_INPUT_AXIS_DISTANCE, 0, 0, 0);
+      _clutter_input_device_add_axis (dev, CLUTTER_INPUT_AXIS_PRESSURE, 0, 0, 0);
+      _clutter_input_device_add_axis (dev, CLUTTER_INPUT_AXIS_XTILT, 0, 0, 0);
+      _clutter_input_device_add_axis (dev, CLUTTER_INPUT_AXIS_YTILT, 0, 0, 0);
+    }
+
   device->seat = seat;
   device->libinput_device = libinput_device;
 
