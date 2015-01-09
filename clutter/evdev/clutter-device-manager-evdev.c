@@ -1336,6 +1336,88 @@ process_device_event (ClutterDeviceManagerEvdev *manager_evdev,
 
         break;
       }
+    case LIBINPUT_EVENT_TABLET_AXIS:
+      {
+        guint32 time, i;
+        double x, y, *axes;
+        gfloat stage_width, stage_height;
+        ClutterStage *stage;
+        struct libinput_event_tablet *tablet_event =
+          libinput_event_get_tablet_event (event);
+        device = libinput_device_get_user_data (libinput_device);
+
+        stage = _clutter_input_device_get_stage (device);
+        if (!stage)
+          break;
+
+        stage_width = clutter_actor_get_width (CLUTTER_ACTOR (stage));
+        stage_height = clutter_actor_get_height (CLUTTER_ACTOR (stage));
+
+        time = libinput_event_tablet_get_time (tablet_event);
+        x = libinput_event_tablet_get_x_transformed (tablet_event, stage_width);
+        y = libinput_event_tablet_get_y_transformed (tablet_event, stage_height);
+
+	axes = g_new (gdouble, clutter_input_device_get_n_axes (device));
+        for (i = LIBINPUT_TABLET_AXIS_X; i < clutter_input_device_get_n_axes (device); i++)
+          axes[i] = libinput_event_tablet_get_axis_value (tablet_event, i);
+
+        notify_absolute_motion (device, time, x, y, axes);
+        break;
+      }
+    case LIBINPUT_EVENT_TABLET_PROXIMITY_IN:
+      {
+        struct libinput_event_tablet *tablet_event =
+          libinput_event_get_tablet_event (event);
+        struct libinput_tool *libinput_tool;
+        ClutterInputDeviceTool *tool;
+        guint tool_serial;
+
+        libinput_tool = libinput_event_tablet_get_tool (tablet_event);
+        tool_serial = libinput_tool_get_serial (libinput_tool);
+
+        device = libinput_device_get_user_data (libinput_device);
+        tool = _clutter_input_device_lookup_tool (device, tool_serial);
+
+        if (!tool)
+          {
+            tool = _clutter_input_device_tool_new (tool_serial);
+            _clutter_input_device_add_tool (device, tool);
+          }
+
+        _clutter_input_device_update_tool (device, tool);
+        break;
+      }
+    case LIBINPUT_EVENT_TABLET_PROXIMITY_OUT:
+      {
+        device = libinput_device_get_user_data (libinput_device);
+        _clutter_input_device_update_tool (device, NULL);
+        break;
+      }
+    case LIBINPUT_EVENT_TABLET_BUTTON:
+      {
+        guint32 time, button_state;
+        struct libinput_event_tablet *tablet_event =
+          libinput_event_get_tablet_event (event);
+        guint tablet_button, event_button;
+
+        time = libinput_event_tablet_get_time (tablet_event);
+        tablet_button = libinput_event_tablet_get_button (tablet_event);
+
+        if (tablet_button >= BTN_TOUCH)
+          event_button = tablet_button - BTN_TOUCH + 1;
+        else
+          {
+            CLUTTER_NOTE (EVENT, "Unhandled tablet button %x",
+                          libinput_event_tablet_get_button (tablet_event));
+            handled = FALSE;
+            break;
+          }
+
+        button_state = libinput_event_tablet_get_button_state (tablet_event) ==
+                       LIBINPUT_BUTTON_STATE_PRESSED;
+        notify_button (device, time, event_button, button_state);
+        break;
+      }
     default:
       handled = FALSE;
     }
