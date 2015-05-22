@@ -1101,6 +1101,8 @@ ClutterScrollEvent
 ClutterStageStateEvent
 ClutterCrossingEvent
 ClutterTouchEvent
+ClutterTouchpadPinchEvent
+ClutterTouchpadSwipeEvent
 ClutterEventSequence
 clutter_event_new
 clutter_event_copy
