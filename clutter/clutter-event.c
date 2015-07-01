@@ -1907,3 +1907,120 @@ clutter_event_remove_filter (guint id)
 
   g_warning ("No event filter found for id: %d\n", id);
 }
+
+/**
+ * clutter_event_get_gesture_swipe_finger_count:
+ * @event: a touchpad swipe event
+ *
+ * Returns the number of fingers that is triggering the touchpad gesture.
+ *
+ * Returns: the number of fingers swiping.
+ *
+ * Since: 1.24
+ **/
+guint
+clutter_event_get_gesture_swipe_finger_count (const ClutterEvent *event)
+{
+  g_return_val_if_fail (event != NULL, 0);
+  g_return_val_if_fail (event->type == CLUTTER_TOUCHPAD_SWIPE_BEGIN ||
+                        event->type == CLUTTER_TOUCHPAD_SWIPE_UPDATE ||
+                        event->type == CLUTTER_TOUCHPAD_SWIPE_END ||
+                        event->type == CLUTTER_TOUCHPAD_SWIPE_CANCEL, 0);
+
+  return event->touchpad_swipe.n_fingers;
+}
+
+/**
+ * clutter_event_get_gesture_pinch_angle_delta:
+ * @event: a touchpad pinch event
+ *
+ * Returns the angle delta reported by this specific event.
+ *
+ * Returns: The angle delta relative to the previous event.
+ *
+ * Since: 1.24
+ **/
+gdouble
+clutter_event_get_gesture_pinch_angle_delta (const ClutterEvent *event)
+{
+  g_return_val_if_fail (event != NULL, 0);
+  g_return_val_if_fail (event->type == CLUTTER_TOUCHPAD_PINCH_BEGIN ||
+                        event->type == CLUTTER_TOUCHPAD_PINCH_UPDATE ||
+                        event->type == CLUTTER_TOUCHPAD_PINCH_END ||
+                        event->type == CLUTTER_TOUCHPAD_PINCH_CANCEL, 0);
+
+  return event->touchpad_pinch.angle_delta;
+}
+
+/**
+ * clutter_event_get_gesture_pinch_scale:
+ * @event: a touchpad pinch event
+ *
+ * Returns the current scale as reported by @event, 1.0 being the original
+ * distance as reported in the %CLUTTER_TOUCHPAD_PINCH_BEGIN event
+ *
+ * Returns: the pinch gesture current scale
+ *
+ * Since: 1.24
+ **/
+gdouble
+clutter_event_get_gesture_pinch_scale (const ClutterEvent *event)
+{
+  g_return_val_if_fail (event != NULL, 0);
+  g_return_val_if_fail (event->type == CLUTTER_TOUCHPAD_PINCH_BEGIN ||
+                        event->type == CLUTTER_TOUCHPAD_PINCH_UPDATE ||
+                        event->type == CLUTTER_TOUCHPAD_PINCH_END ||
+                        event->type == CLUTTER_TOUCHPAD_PINCH_CANCEL, 0);
+
+  return event->touchpad_pinch.scale;
+}
+
+/**
+ * clutter_event_get_gesture_motion_delta:
+ * @event: A clutter touchpad gesture event
+ * @dx: (out) (allow-none): the displacement relative to the pointer
+ *      position in the X axis, or %NULL
+ * @dy: (out) (allow-none): the displacement relative to the pointer
+ *      position in the Y axis, or %NULL
+ *
+ * Returns the gesture motion deltas relative to the current pointer
+ * position.
+ *
+ * Since: 1.24
+ **/
+void
+clutter_event_get_gesture_motion_delta (const ClutterEvent *event,
+                                        gdouble            *dx,
+                                        gdouble            *dy)
+{
+  g_return_val_if_fail (event != NULL, FALSE);
+  g_return_val_if_fail (event->type == CLUTTER_TOUCHPAD_PINCH_BEGIN ||
+                        event->type == CLUTTER_TOUCHPAD_PINCH_UPDATE ||
+                        event->type == CLUTTER_TOUCHPAD_PINCH_END ||
+                        event->type == CLUTTER_TOUCHPAD_PINCH_CANCEL ||
+                        event->type == CLUTTER_TOUCHPAD_SWIPE_BEGIN ||
+                        event->type == CLUTTER_TOUCHPAD_SWIPE_UPDATE ||
+                        event->type == CLUTTER_TOUCHPAD_SWIPE_END ||
+                        event->type == CLUTTER_TOUCHPAD_SWIPE_CANCEL, FALSE);
+
+  if (event->type == CLUTTER_TOUCHPAD_PINCH_BEGIN ||
+      event->type == CLUTTER_TOUCHPAD_PINCH_UPDATE ||
+      event->type == CLUTTER_TOUCHPAD_PINCH_END ||
+      event->type == CLUTTER_TOUCHPAD_PINCH_CANCEL)
+    {
+      if (dx)
+        *dx = event->touchpad_pinch.dx;
+      if (dy)
+        *dy = event->touchpad_pinch.dy;
+    }
+  else if (event->type == CLUTTER_TOUCHPAD_SWIPE_BEGIN ||
+           event->type == CLUTTER_TOUCHPAD_SWIPE_UPDATE ||
+           event->type == CLUTTER_TOUCHPAD_SWIPE_END ||
+           event->type == CLUTTER_TOUCHPAD_SWIPE_CANCEL)
+    {
+      if (dx)
+        *dx = event->touchpad_swipe.dx;
+      if (dy)
+        *dy = event->touchpad_swipe.dy;
+    }
+}
